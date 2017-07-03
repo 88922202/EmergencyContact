@@ -1,5 +1,7 @@
 package com.day.emergencycontact.location;
 
+import android.content.Intent;
+
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
 import com.amap.api.location.AMapLocationClientOption;
@@ -22,12 +24,15 @@ import de.greenrobot.event.EventBus;
 
 public class AmapLocationService {
 
-    public static final String TAG = "AmapLocationService";
+   // public static final String TAG = "AmapLocationService";
+    public static final String LOCATION = "location";
+    public static final String INCOME_CALL = "income_call";
 
     private static int count;
 
     private static AmapLocationService mInstance;
     private AMapLocationClient locationClient;
+    private String mIncomePhoneNumber;
 
     private AmapLocationService(){
 
@@ -42,6 +47,10 @@ public class AmapLocationService {
         return mInstance;
     }
 
+    public void setIncomePhoneNumber(String number){
+        mIncomePhoneNumber = number;
+    }
+
     /**
      * 初始化定位
      *
@@ -50,7 +59,7 @@ public class AmapLocationService {
      *
      */
     public void initLocation(){
-        LogUtils.d(TAG, "initLocation.");
+        LogUtils.d("initLocation.");
         //初始化client
         locationClient = new AMapLocationClient(MyApplication.getInstance());
         //设置定位参数
@@ -89,7 +98,7 @@ public class AmapLocationService {
      */
     public void startLocation(){
         locationClient.startLocation();
-        LogUtils.d(TAG, "startLocation.");
+        LogUtils.d( "startLocation.");
     }
 
 //    /**
@@ -121,7 +130,7 @@ public class AmapLocationService {
             locationClient.onDestroy();
             locationClient = null;
             //locationOption = null;
-            LogUtils.d(TAG, "destroyLocation.");
+            LogUtils.d( "destroyLocation.");
         }
     }
 
@@ -131,8 +140,9 @@ public class AmapLocationService {
     AMapLocationListener locationListener = new AMapLocationListener() {
         @Override
         public void onLocationChanged(AMapLocation loc) {
-            LogUtils.d(TAG, "onLocationChanged. location");
-            sendLocationSuccessEvent(loc);
+            LogUtils.d( "onLocationChanged. location." + loc.toString());
+            //sendLocationSuccessEvent(loc);
+            sendLocationSuccessBroadcast(loc);
             count++;
             if (count >= 5){
                 //持续定位10秒后，关闭定位
@@ -142,24 +152,32 @@ public class AmapLocationService {
         }
     };
 
-    private void sendLocationSuccessEvent(AMapLocation location){
-        if (location != null) {
-            final LocationEvent successEvent = new LocationEvent();
-            successEvent.setLatitude( location.getLatitude());
-            successEvent.setLongitude(location.getLongitude());
-            //successEvent.radius = location.getBearing();
-            successEvent.setAddress(location.getAddress());
-            successEvent.setCity(location.getCity());
-            successEvent.setCityCode(location.getCityCode());
-            LogUtils.d(TAG, "sendLocationSuccessEvent.");
-            EventBus.getDefault().post(successEvent);
-            //locationClient.stopLocation();
-        }else {
-            LogUtils.d(TAG, "sendLocationFailedEvent.");
-            LocationEvent failEvent = new LocationEvent();
-            EventBus.getDefault().post(failEvent);
-            //locationClient.stopLocation();
-        }
+//    private void sendLocationSuccessEvent(AMapLocation location){
+//        if (location != null) {
+//            final LocationEvent successEvent = new LocationEvent();
+//            successEvent.setLatitude( location.getLatitude());
+//            successEvent.setLongitude(location.getLongitude());
+//            //successEvent.radius = location.getBearing();
+//            successEvent.setAddress(location.getAddress());
+//            successEvent.setCity(location.getCity());
+//            successEvent.setCityCode(location.getCityCode());
+//            LogUtils.d(TAG, "sendLocationSuccessEvent.");
+//            EventBus.getDefault().post(successEvent);
+//            //locationClient.stopLocation();
+//        }else {
+//            LogUtils.d(TAG, "sendLocationFailedEvent.");
+//            LocationEvent failEvent = new LocationEvent();
+//            EventBus.getDefault().post(failEvent);
+//            //locationClient.stopLocation();
+//        }
+//    }
+
+    private void sendLocationSuccessBroadcast(AMapLocation location){
+        Intent intent = new Intent("com.day.emergencycontact.LOCATION");
+        intent.putExtra(LOCATION, location);
+        intent.putExtra(INCOME_CALL, mIncomePhoneNumber);
+        MyApplication.getInstance().sendBroadcast(intent);
+        LogUtils.d( "send location broadcast.");
     }
 
 }
